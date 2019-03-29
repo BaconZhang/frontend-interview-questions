@@ -1,10 +1,15 @@
 function _new(constructor, ...args) {
-  function F() { };
-  F.prototype = superType.prototype;
-
-  let instance = new Object();
-  constructor.call(instance, ...args);
-  instance.prototype = new F();
-  instance.constructor = constructor;
-  return instance;
+  const obj = Object.create(constructor.prototype);
+  const ret = constructor.call(obj, ...args);
+  return ret instanceof Object ? ret : obj;
 }
+
+function People(name) {
+  this.name = name;
+}
+
+People.prototype.sayName = function () {
+  console.log(this.name);
+}
+
+let people = _new(People, 'jack');

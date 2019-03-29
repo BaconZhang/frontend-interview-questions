@@ -1,122 +1,105 @@
-// unfinished
-const STATES = {
+const STATUS = {
   'pending': 0,
-  'fulfilled': 1,
-  'rejected': 2,
-  'isPromise': 3
+  'resolved': 1,
+  'rejected': 2
 };
 
-function noop() { }
+function Promise(executor) {
+  let self = this;
+  self.status = STATUS.pending;
+  self.data = undefined;
+  self.onResolvedCallback = [];
+  self.onRejectedCallback = [];
 
-function bind(fn, thisArg) {
-  return function () {
-    fn.apply(thisArg, arguments);
-  }
-}
-
-/*
-  @params fn (resolve, reject) => {}
-*/
-function Promise(fn) {
-  if (!(this instanceof Promise)) throw new TypeError('Promises must be constructed via new');
-  if (typeof fn !== 'function') throw new TypeError('not a function');
-
-  this._state = STATES.pending;
-
-  this._handled = undefined;
-
-  this._value = undefined;
-
-  this._deferreds = [];
-
-  doReslove(fn, this);
-}
-
-function handle(context, deferred) {
-  while (context._state === Promise.isPromise) {
-    context = context._value;
-  }
-  if (context._state === STATES.pending) {
-    context._deferreds.push(deferred);
-    return;
-  }
-  context._handled = true;
-  Promise._immediateFn(function () {
-    const cb = self._state === 1 ? deferred.onFulfilled : deferred.onRejected;
-    if (cb === null) {
-      (self._state === 1 ? resolve : reject)(deferred.promise, context._value);
-      return;
+  function resolve(value) {
+    if (self.status === STATUS.pending) {
+      self.status = STATUS.resolved;
+      self.data = value;
+      for (let i = 0; i < self.onResolvedCallback.length; i++) {
+        self.onResolvedCallback[i](value);
+      }
     }
-    let ret;
-    try {
-      ret = cb(context._value);
-    } catch (err) {
-      reject(deferred.promise, err);
-      return
+  }
+
+  function reject(reason) {
+    if (self.status === STATUS.pending) {
+      self.status = STATUS.rejected;
+      self.data = reason;
+      for (let i = 0; i < self.onRejectedCallback.length; i++) {
+        self.onRejectedCallback[i](reason);
+      }
     }
-    resolve(deferred.promise, ret);
-  })
+  }
+
+  try {
+    executor(resolve, reject);
+  } catch (e) {
+    reject(e);
+  }
 }
 
-function reject(context, err) {
-  context._state = STATES.rejected;
-  selef._value = err;
-  finale(context);
-}
+Promise.prototype.then = function (onResolved, onRejected) {
+  let self = this;
+  let promise2;
 
-function finale(context) {
-  if (context._state === STATES.rejected && context._deferreds.length === 0) {
-    Promise._immediateFn(function () {
-      if (!context._handled) {
-        Promise._unhandledRejectionFn(context.value);
+  onResolved = typeof onResolved === 'function' ? onResolved : function (value) { return value };
+  onRejected = typeof onRejected === 'function' ? onRejected : function (reason) { throw reason };
+
+  if (self.status === STATUS.resolved) {
+    return promise2 = new Promise(function (resolve, reject) {
+      try {
+        let x = onResolved(self.data);
+        if (x instanceof Promise) {
+          x.then(resolve, reject);
+        }
+        resolve(x);
+      } catch (e) {
+        reject(e)
       }
     })
   }
 
-  for (let i = 0; i < context._deferreds.length; i++) {
-    handle(context, context._deferreds[i]);
-  }
-  context._deferreds = null;
-}
-
-function doReslove(fn, context) {
-  let done = false;
-  try {
-    fn(
-      function (value) {
-        if (done) return;
-        done = false;
-        resolve(context, value);
-      },
-      function (err) {
-        if (done) return;
-        done = true;
-        reject(context, err);
+  if (self.status === STATUS.rejected) {
+    return promise2 = new Promise(function (resolve, reject) {
+      try {
+        let x = onRejected(self.data);
+        if (x instanceof Promise) {
+          x.then(resolve, reject);
+        }
+      } catch (e) {
+        reject(e)
       }
-    )
-  } catch (err) {
-    if (done) return;
-    done = true;
-    reject(context, err);
+    })
+  }
+
+  if (self.status === STATUS.pending) {
+    return promise2 = new Promise(function (resolve, reject) {
+      self.onResolvedCallback.push(function (value) {
+        try {
+          let x = onResolved(value);
+          if (x instanceof Promise) {
+            x.then(resolve, reject);
+          }
+          resolve(x);
+        } catch (e) {
+          reject(e)
+        }
+      })
+
+      self.onRejectedCallback.push(function (reason) {
+        try {
+          var x = onRejected(self.data)
+          if (x instanceof Promise) {
+            x.then(resolve, reject)
+          }
+        } catch (e) {
+          reject(e)
+        }
+      })
+    })
   }
 }
 
-Promise.prototype.then = function (onFulfilled, onRejected) {
-  let promise = new this.contructor();
-
-
-}
-
-Promise._immediateFn = function (fn) {
-  if (typeof setImmediate === 'function') {
-    setImmediate(fn);
-  } else {
-    setTimeout(fn, 0);
-  }
-}
-
-Promise._unhandledRejectionFn = function _unhandledRejectionFn(err) {
-  if (typeof console !== 'undefined' && console) {
-    console.warn('Possible Unhandled Promise Rejection:', err);
-  }
+Promise.prototype.catch = function (onRejected) {
+  return this.then(null, onRejected)
 }
