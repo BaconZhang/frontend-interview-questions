@@ -32,11 +32,50 @@
  * 
  * 
  */
+function binarySearch(arr, target) {
+  if (arr.length === 0) {
+    return false;
+  } else if (arr.length === 1) {
+    return arr[0] === target;
+  } else {
+    arr = arr.sort((a, b) => a - b);
+    let midIndex = Math.floor(arr.length / 2);
+    let mid = arr[midIndex];
+    if (mid < target) {
+      return binarySearch(arr.slice(midIndex), target);
+    } else if (mid > target) {
+      return binarySearch(arr.slice(0, midIndex), target);
+    } else {
+      return true;
+    }
+  }
+}
+
+const arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
 /**
  * @param {number[]} nums
  * @return {number[][]}
  */
-var threeSum = function(nums) {
-    
+var threeSum = function (nums) {
+  let result = new Map();
+  nums = nums.sort((a, b) => a - b);
+  for (let i = 0; i < nums.length; i++) {
+    let arrLeft = nums.slice(0, i);
+    let arrRight = nums.slice(i + 1);
+    let target = nums[i];
+
+    arrLeft.forEach(num => {
+      if (binarySearch(arrRight, -(target + num))) {
+        const value = [num, target, -(target + num)];
+        const token = value.toString();
+        if (!result.has(token)) {
+          result.set(token, value);
+        }
+      }
+    })
+  }
+  return [...result.values()];
 };
 
+console.log(threeSum([-1, 0, 1, 2, -1, -4]));
