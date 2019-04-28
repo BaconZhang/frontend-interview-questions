@@ -1,11 +1,13 @@
 function all(fns) {
   return new Promise((resolve, reject) => {
     let result = [];
+    let resolveCount = 0;
     next(0);
     function next(index) {
       fns[index]().then(res => {
-        result.push(res);
-        if (index === fns.length - 1) {
+        result[index] = res;
+        resolveCount++;
+        if (resolveCount === fns.length) {
           resolve(result);
         }
       }).catch(err => reject(err));
@@ -25,10 +27,10 @@ function race(fns) {
 }
 
 const fns = [
-  () => new Promise((resolve) => setTimeout(() => resolve(1), 1000)),
-  () => new Promise((resolve) => setTimeout(() => resolve(2), 2000)),
-  () => new Promise((resolve) => setTimeout(() => resolve(3), 3000)),
-  () => new Promise((resolve) => setTimeout(() => resolve(4), 4000)),
+  () => new Promise((resolve) => setTimeout(() => resolve(1), 4000)),
+  () => new Promise((resolve) => setTimeout(() => resolve(2), 3000)),
+  () => new Promise((resolve) => setTimeout(() => resolve(3), 2000)),
+  () => new Promise((resolve) => setTimeout(() => resolve(4), 1000)),
 ];
 
 all(fns).then(res => console.log(res));
