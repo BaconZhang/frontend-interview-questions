@@ -1,0 +1,7 @@
+{
+  "name": "ts",
+  "main": "./bin/ts.js",
+  "bin": {
+    "ts": "./bin/ts.js"
+  }
+}
