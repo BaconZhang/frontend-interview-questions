@@ -3,5 +3,8 @@
   "main": "./bin/ts.js",
   "bin": {
     "ts": "./bin/ts.js"
+  },
+  "dependencies": {
+    "typescript": "^3.6.3"
   }
 }
